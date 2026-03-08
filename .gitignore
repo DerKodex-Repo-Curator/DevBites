@@ -1,0 +1,11 @@
+# Build output
+bin/
+obj/
+
+# .env contains secrets – never commit it
+.env
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+/.vs
