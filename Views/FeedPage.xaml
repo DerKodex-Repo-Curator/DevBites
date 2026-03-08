@@ -3,7 +3,7 @@
     x:Class="DevBites.Views.FeedPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:models="clr-namespace:DevBites.Models"
+    xmlns:controls="clr-namespace:DevBites.Views.Controls"
     xmlns:viewmodels="clr-namespace:DevBites.ViewModels"
     x:DataType="viewmodels:FeedViewModel"
     BackgroundColor="#0A0E1A"
@@ -12,41 +12,7 @@
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!--  ── Header ──────────────────────────────────────────────────  -->
-        <Grid
-            Grid.Row="0"
-            Padding="20,52,20,12"
-            BackgroundColor="#0D1117"
-            ColumnDefinitions="Auto,*"
-            ColumnSpacing="12">
-
-            <Label
-                Grid.Column="0"
-                FontAttributes="Bold"
-                FontSize="26"
-                Text="DevBites"
-                TextColor="#8B5CF6"
-                VerticalOptions="Center" />
-
-            <Border
-                Grid.Column="1"
-                BackgroundColor="#161B22"
-                HorizontalOptions="End"
-                Stroke="#30363D"
-                StrokeThickness="1"
-                VerticalOptions="Center">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="10" />
-                </Border.StrokeShape>
-                <Picker
-                    HorizontalOptions="End"
-                    ItemsSource="{Binding Topics}"
-                    MinimumWidthRequest="170"
-                    SelectedItem="{Binding SelectedTopic}"
-                    TextColor="#F9FAFB"
-                    Title="Select topic"
-                    TitleColor="#9CA3AF" />
-            </Border>
-        </Grid>
+        <controls:FeedHeaderView Grid.Row="0" />
 
         <!--  Header bottom divider  -->
         <BoxView
@@ -76,129 +42,8 @@
             </CollectionView.Footer>
 
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:ProgrammingReel">
-                    <Border
-                        Margin="16,6"
-                        BackgroundColor="#111827"
-                        Stroke="#1F2937"
-                        StrokeThickness="1">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="16" />
-                        </Border.StrokeShape>
-
-                        <Grid RowDefinitions="4,Auto,Auto,Auto,Auto">
-
-                            <!--  Top accent stripe (clipped by Border's rounded corners)  -->
-                            <BoxView
-                                Grid.Row="0"
-                                BackgroundColor="#8B5CF6"
-                                HeightRequest="4" />
-
-                            <!--  Title + Language badge  -->
-                            <Grid
-                                Grid.Row="1"
-                                Padding="16,14,16,8"
-                                ColumnDefinitions="*,Auto"
-                                ColumnSpacing="10">
-                                <Label
-                                    Grid.Column="0"
-                                    FontAttributes="Bold"
-                                    FontSize="18"
-                                    LineBreakMode="WordWrap"
-                                    Text="{Binding Title}"
-                                    TextColor="#F9FAFB" />
-                                <Border
-                                    Grid.Column="1"
-                                    Padding="8,4"
-                                    BackgroundColor="#2D1B69"
-                                    Stroke="#4C1D95"
-                                    StrokeThickness="1"
-                                    VerticalOptions="Start">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="10" />
-                                    </Border.StrokeShape>
-                                    <Label
-                                        FontAttributes="Bold"
-                                        FontSize="11"
-                                        Text="{Binding Language}"
-                                        TextColor="#8B5CF6" />
-                                </Border>
-                            </Grid>
-
-                            <!--  Hook  -->
-                            <Label
-                                Grid.Row="2"
-                                Margin="16,0,16,10"
-                                FontAttributes="Italic"
-                                FontSize="14"
-                                LineBreakMode="WordWrap"
-                                Text="{Binding Hook}"
-                                TextColor="#06B6D4" />
-
-                            <!--  Explanation  -->
-                            <Label
-                                Grid.Row="3"
-                                Margin="16,0,16,10"
-                                FontSize="13"
-                                LineBreakMode="WordWrap"
-                                LineHeight="1.5"
-                                Text="{Binding Explanation}"
-                                TextColor="#9CA3AF" />
-
-                            <!--  Code block + Key takeaway  -->
-                            <VerticalStackLayout
-                                Grid.Row="4"
-                                Margin="16,0,16,16"
-                                Spacing="10">
-
-                                <!--  Code block  -->
-                                <Border
-                                    BackgroundColor="#1E293B"
-                                    Stroke="#2D3748"
-                                    StrokeThickness="1">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="8" />
-                                    </Border.StrokeShape>
-                                    <Label
-                                        Padding="14"
-                                        FontFamily="OpenSansRegular"
-                                        FontSize="12"
-                                        LineBreakMode="WordWrap"
-                                        LineHeight="1.5"
-                                        Text="{Binding CodeExample}"
-                                        TextColor="#E2E8F0" />
-                                </Border>
-
-                                <!--  Key takeaway  -->
-                                <Border
-                                    BackgroundColor="#1A1A2E"
-                                    Stroke="#2D1B69"
-                                    StrokeThickness="1">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="8" />
-                                    </Border.StrokeShape>
-                                    <Grid
-                                        Padding="12,10"
-                                        ColumnDefinitions="Auto,*"
-                                        ColumnSpacing="8">
-                                        <Label
-                                            Grid.Column="0"
-                                            FontSize="16"
-                                            Text="💡"
-                                            VerticalOptions="Start" />
-                                        <Label
-                                            Grid.Column="1"
-                                            FontAttributes="Bold"
-                                            FontSize="13"
-                                            LineBreakMode="WordWrap"
-                                            Text="{Binding KeyTakeaway}"
-                                            TextColor="#F9FAFB" />
-                                    </Grid>
-                                </Border>
-
-                            </VerticalStackLayout>
-                        </Grid>
-                    </Border>
+                <DataTemplate>
+                    <controls:ReelCardView />
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

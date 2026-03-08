@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="DevBites.Views.Controls.FeedHeaderView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:DevBites.ViewModels"
+    x:DataType="viewmodels:FeedViewModel">
+
+    <Grid BackgroundColor="#0D1117" RowDefinitions="Auto,Auto">
+
+        <!--  Title bar — tap anywhere to collapse / expand  -->
+        <Grid
+            Grid.Row="0"
+            Padding="20,52,20,12"
+            ColumnDefinitions="*,Auto"
+            ColumnSpacing="12">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ToggleHeaderCommand}" />
+            </Grid.GestureRecognizers>
+
+            <Label
+                Grid.Column="0"
+                FontAttributes="Bold"
+                FontSize="26"
+                Text="DevBites"
+                TextColor="#8B5CF6"
+                VerticalOptions="Center" />
+
+            <Label
+                x:Name="ChevronLabel"
+                Grid.Column="1"
+                FontSize="18"
+                Text="▾"
+                TextColor="#6B7280"
+                VerticalOptions="Center" />
+        </Grid>
+
+        <!--  Collapsible pickers row  -->
+        <Grid
+            x:Name="PickersSection"
+            Grid.Row="1"
+            Padding="20,0,20,12"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="12">
+
+            <Border
+                Grid.Column="0"
+                BackgroundColor="#161B22"
+                Stroke="#30363D"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10" />
+                </Border.StrokeShape>
+                <Picker
+                    ItemsSource="{Binding Topics}"
+                    SelectedItem="{Binding SelectedTopic}"
+                    TextColor="#F9FAFB"
+                    Title="Topic"
+                    TitleColor="#9CA3AF" />
+            </Border>
+
+            <Border
+                Grid.Column="1"
+                BackgroundColor="#161B22"
+                Stroke="#30363D"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10" />
+                </Border.StrokeShape>
+                <Picker
+                    ItemsSource="{Binding ExpertiseLevels}"
+                    SelectedItem="{Binding SelectedExpertiseLevel}"
+                    TextColor="#F9FAFB"
+                    Title="Level"
+                    TitleColor="#9CA3AF" />
+            </Border>
+        </Grid>
+
+    </Grid>
+</ContentView>

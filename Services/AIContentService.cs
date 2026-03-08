@@ -9,7 +9,7 @@ public class AIContentService : IAIContentService
     private readonly IChatClient _chatClient;
 
     private const string PromptTemplate = """
-        Generate exactly 10 programming concept cards for the topic: {0}.
+        Generate exactly 10 programming concept cards for the topic: {0}, tailored for a {1} level developer.
 
         Respond ONLY with a valid JSON array. No markdown, no code fences, no backticks, no extra text.
         The response must start with [ and end with ].
@@ -19,7 +19,7 @@ public class AIContentService : IAIContentService
           {{
             "title": "Short catchy title (5-8 words)",
             "hook": "One powerful attention-grabbing sentence about why this matters",
-            "explanation": "2-3 clear sentences explaining the concept for a developer",
+            "explanation": "2-3 clear sentences explaining the concept for a {1} level developer",
             "codeExample": "A short, focused code snippet (5-10 lines max)",
             "keyTakeaway": "The single most important lesson from this concept",
             "language": "{0}"
@@ -27,7 +27,7 @@ public class AIContentService : IAIContentService
         ]
 
         Rules:
-        - Vary the concepts across beginner, intermediate, and advanced topics
+        - Tailor all concepts, examples, and explanations to a {1} level developer
         - Keep code examples concise and directly relevant
         - Make the hook genuinely engaging, not generic
         - Return ONLY the JSON array — nothing else
@@ -46,9 +46,10 @@ public class AIContentService : IAIContentService
 
     public async Task<IReadOnlyList<ProgrammingReel>> GetReelsAsync(
         string topic,
+        string expertiseLevel,
         CancellationToken cancellationToken = default)
     {
-        var prompt = string.Format(PromptTemplate, topic);
+        var prompt = string.Format(PromptTemplate, topic, expertiseLevel);
 
         var response = await _chatClient.GetResponseAsync(
             [new ChatMessage(ChatRole.User, prompt)],

@@ -26,13 +26,24 @@ public partial class FeedViewModel : ObservableObject
     private string? _errorMessage;
 
     [ObservableProperty]
+    private bool _isHeaderCollapsed;
+
+    [ObservableProperty]
     private string _selectedTopic = ".NET";
+
+    [ObservableProperty]
+    private string _selectedExpertiseLevel = "Beginner";
 
     public ObservableCollection<ProgrammingReel> Reels { get; } = [];
 
     public List<string> Topics { get; } =
     [
         ".NET", "Python", "OOP", "SOLID", "Design Patterns", "Data Structures"
+    ];
+
+    public List<string> ExpertiseLevels { get; } =
+    [
+        "Beginner", "Medium", "Advanced", "Pro"
     ];
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
@@ -42,6 +53,14 @@ public partial class FeedViewModel : ObservableObject
     {
         _ = StartFreshLoadAsync();
     }
+
+    partial void OnSelectedExpertiseLevelChanged(string value)
+    {
+        _ = StartFreshLoadAsync();
+    }
+
+    [RelayCommand]
+    private void ToggleHeader() => IsHeaderCollapsed = !IsHeaderCollapsed;
 
     [RelayCommand]
     private async Task LoadInitialAsync()
@@ -88,7 +107,7 @@ public partial class FeedViewModel : ObservableObject
 
         try
         {
-            var newReels = await _aiService.GetReelsAsync(SelectedTopic, cancellationToken);
+            var newReels = await _aiService.GetReelsAsync(SelectedTopic, SelectedExpertiseLevel, cancellationToken);
             foreach (var reel in newReels)
                 Reels.Add(reel);
         }
