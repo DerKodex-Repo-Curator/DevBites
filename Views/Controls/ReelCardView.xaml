@@ -27,7 +27,7 @@
             <Grid
                 Grid.Row="1"
                 Padding="16,14,16,8"
-                ColumnDefinitions="*,Auto"
+                ColumnDefinitions="*,Auto,Auto"
                 ColumnSpacing="10">
                 <Label
                     Grid.Column="0"
@@ -52,6 +52,28 @@
                         Text="{Binding Language}"
                         TextColor="#8B5CF6" />
                 </Border>
+
+                <Label
+                    Grid.Column="2"
+                    FontSize="20"
+                    Text="♡"
+                    TextColor="#9CA3AF"
+                    VerticalOptions="Start">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ToggleFavoriteCommand}"
+                            CommandParameter="{Binding .}" />
+                    </Label.GestureRecognizers>
+                    <Label.Triggers>
+                        <DataTrigger
+                            Binding="{Binding IsFavorite}"
+                            TargetType="Label"
+                            Value="True">
+                            <Setter Property="Text" Value="♥" />
+                            <Setter Property="TextColor" Value="#EF4444" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
             </Grid>
 
             <!--  Hook  -->

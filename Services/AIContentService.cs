@@ -1,6 +1,7 @@
 using DevBites.Models;
 using Microsoft.Extensions.AI;
 using System.Text.Json;
+using System.Text.Json.Schema;
 
 namespace DevBites.Services;
 
@@ -39,6 +40,16 @@ public class AIContentService : IAIContentService
         AllowTrailingCommas = true
     };
 
+    private static readonly ChatOptions _chatOptions = new()
+    {
+        ResponseFormat = ChatResponseFormat.ForJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                JsonSerializerOptions.Default
+                    .GetJsonSchemaAsNode(typeof(List<ProgrammingReel>))
+                    .ToJsonString()),
+            schemaName: "ProgrammingReels")
+    };
+
     public AIContentService(IChatClient chatClient)
     {
         _chatClient = chatClient;
@@ -53,6 +64,7 @@ public class AIContentService : IAIContentService
 
         var response = await _chatClient.GetResponseAsync(
             [new ChatMessage(ChatRole.User, prompt)],
+            _chatOptions,
             cancellationToken: cancellationToken);
 
         var json = response.Text

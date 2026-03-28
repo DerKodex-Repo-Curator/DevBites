@@ -9,7 +9,7 @@
     BackgroundColor="#0A0E1A"
     Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
 
         <!--  ── Header ──────────────────────────────────────────────────  -->
         <controls:FeedHeaderView Grid.Row="0" />
@@ -21,39 +21,75 @@
             HeightRequest="1"
             VerticalOptions="End" />
 
-        <!--  ── Feed ─────────────────────────────────────────────────────  -->
-        <CollectionView
-            Grid.Row="1"
-            BackgroundColor="Transparent"
-            ItemsSource="{Binding Reels}"
-            RemainingItemsThreshold="2"
-            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+        <Grid Grid.Row="1">
 
-            <CollectionView.ItemsLayout>
-                <LinearItemsLayout ItemSpacing="0" Orientation="Vertical" />
-            </CollectionView.ItemsLayout>
+            <!--  ── Feed ─────────────────────────────────────────────────────  -->
+            <CollectionView
+                BackgroundColor="Transparent"
+                IsVisible="{Binding IsFeedVisible}"
+                ItemsSource="{Binding Reels}"
+                RemainingItemsThreshold="2"
+                RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
 
-            <CollectionView.Header>
-                <BoxView BackgroundColor="Transparent" HeightRequest="8" />
-            </CollectionView.Header>
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="0" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
 
-            <CollectionView.Footer>
-                <BoxView BackgroundColor="Transparent" HeightRequest="12" />
-            </CollectionView.Footer>
+                <CollectionView.Header>
+                    <BoxView BackgroundColor="Transparent" HeightRequest="8" />
+                </CollectionView.Header>
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <controls:ReelCardView />
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                <CollectionView.Footer>
+                    <BoxView BackgroundColor="Transparent" HeightRequest="12" />
+                </CollectionView.Footer>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <controls:ReelCardView />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <CollectionView
+                BackgroundColor="Transparent"
+                IsVisible="{Binding IsFavoritesVisible}"
+                ItemsSource="{Binding FavoriteReels}">
+
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="0" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <Label
+                        Margin="20"
+                        FontSize="14"
+                        HorizontalTextAlignment="Center"
+                        Text="No favorites yet. Tap ♡ on any reel to save it."
+                        TextColor="#9CA3AF" />
+                </CollectionView.EmptyView>
+
+                <CollectionView.Header>
+                    <BoxView BackgroundColor="Transparent" HeightRequest="8" />
+                </CollectionView.Header>
+
+                <CollectionView.Footer>
+                    <BoxView BackgroundColor="Transparent" HeightRequest="12" />
+                </CollectionView.Footer>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <controls:ReelCardView />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
 
         <!--  ── Bottom status bar (loading / error) ───────────────────────  -->
         <Grid
             Grid.Row="2"
             MinimumHeightRequest="52"
             BackgroundColor="#0A0E1A"
-            Padding="16,8,16,20">
+            Padding="16,8,16,8">
             <ActivityIndicator
                 HorizontalOptions="Center"
                 Color="#8B5CF6"
@@ -71,9 +107,68 @@
                 VerticalOptions="Center" />
         </Grid>
 
+        <Grid
+            Grid.Row="3"
+            BackgroundColor="#0D1117"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="10"
+            Padding="16,8,16,20">
+            <Button
+                Grid.Column="0"
+                BorderColor="#374151"
+                BorderWidth="1"
+                Command="{Binding ShowFeedCommand}"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                Text="Feed">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsFeedVisible}"
+                        TargetType="Button"
+                        Value="True">
+                        <Setter Property="BackgroundColor" Value="#8B5CF6" />
+                        <Setter Property="TextColor" Value="#FFFFFF" />
+                    </DataTrigger>
+                    <DataTrigger
+                        Binding="{Binding IsFeedVisible}"
+                        TargetType="Button"
+                        Value="False">
+                        <Setter Property="BackgroundColor" Value="#1F2937" />
+                        <Setter Property="TextColor" Value="#F9FAFB" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <Button
+                Grid.Column="1"
+                BorderColor="#374151"
+                BorderWidth="1"
+                Command="{Binding ShowFavoritesCommand}"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                Text="Favorites">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsFavoritesVisible}"
+                        TargetType="Button"
+                        Value="True">
+                        <Setter Property="BackgroundColor" Value="#8B5CF6" />
+                        <Setter Property="TextColor" Value="#FFFFFF" />
+                    </DataTrigger>
+                    <DataTrigger
+                        Binding="{Binding IsFavoritesVisible}"
+                        TargetType="Button"
+                        Value="False">
+                        <Setter Property="BackgroundColor" Value="#1F2937" />
+                        <Setter Property="TextColor" Value="#F9FAFB" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+        </Grid>
+
         <!--  ── Initial loading overlay (covers everything on first load) ──  -->
         <Grid
-            Grid.RowSpan="3"
+            Grid.RowSpan="4"
             BackgroundColor="#0A0E1A"
             IsVisible="{Binding IsInitialLoading}">
             <VerticalStackLayout

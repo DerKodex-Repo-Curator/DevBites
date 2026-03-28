@@ -38,6 +38,7 @@ namespace DevBites
 
             // Services
             builder.Services.AddSingleton<IAIContentService, AIContentService>();
+            builder.Services.AddSingleton<IFavoritesService, FavoritesService>();
 
             // ViewModels
             builder.Services.AddTransient<FeedViewModel>();

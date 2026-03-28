@@ -9,12 +9,14 @@ namespace DevBites.ViewModels;
 public partial class FeedViewModel : ObservableObject
 {
     private readonly IAIContentService _aiService;
+    private readonly IFavoritesService _favoritesService;
     private CancellationTokenSource? _loadingCts;
     private bool _isFetchingMore;
 
-    public FeedViewModel(IAIContentService aiService)
+    public FeedViewModel(IAIContentService aiService, IFavoritesService favoritesService)
     {
         _aiService = aiService;
+        _favoritesService = favoritesService;
     }
 
     [ObservableProperty]
@@ -34,7 +36,13 @@ public partial class FeedViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedExpertiseLevel = "Beginner";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFeedVisible))]
+    [NotifyPropertyChangedFor(nameof(IsFavoritesVisible))]
+    private bool _showFavorites;
+
     public ObservableCollection<ProgrammingReel> Reels { get; } = [];
+    public ObservableCollection<ProgrammingReel> FavoriteReels { get; } = [];
 
     public List<string> Topics { get; } =
     [
@@ -48,6 +56,8 @@ public partial class FeedViewModel : ObservableObject
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
     public bool IsInitialLoading => IsLoading && Reels.Count == 0;
+    public bool IsFeedVisible => !ShowFavorites;
+    public bool IsFavoritesVisible => ShowFavorites;
 
     partial void OnSelectedTopicChanged(string value)
     {
@@ -63,11 +73,47 @@ public partial class FeedViewModel : ObservableObject
     private void ToggleHeader() => IsHeaderCollapsed = !IsHeaderCollapsed;
 
     [RelayCommand]
+    private async Task ShowFeedAsync()
+    {
+        ShowFavorites = false;
+        if (Reels.Count == 0)
+            await StartFreshLoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task ShowFavoritesAsync()
+    {
+        ShowFavorites = true;
+        await LoadFavoritesAsync();
+    }
+
+    [RelayCommand]
+    private async Task ToggleFavoriteAsync(ProgrammingReel reel)
+    {
+        var isFavorite = await _favoritesService.ToggleFavoriteAsync(reel);
+        reel.IsFavorite = isFavorite;
+
+        var reelId = _favoritesService.GetReelId(reel);
+        var existing = FavoriteReels.FirstOrDefault(x => _favoritesService.GetReelId(x) == reelId);
+
+        if (isFavorite)
+        {
+            if (existing is null)
+                FavoriteReels.Insert(0, CreateCopy(reel, true));
+        }
+        else if (existing is not null)
+        {
+            FavoriteReels.Remove(existing);
+        }
+    }
+
+    [RelayCommand]
     private async Task LoadInitialAsync()
     {
         if (IsLoading)
             return;
 
+        await LoadFavoritesAsync();
         await StartFreshLoadAsync();
     }
 
@@ -75,6 +121,9 @@ public partial class FeedViewModel : ObservableObject
     private async Task LoadMoreAsync()
     {
         if (IsLoading || _isFetchingMore)
+            return;
+
+        if (ShowFavorites)
             return;
 
         _isFetchingMore = true;
@@ -108,8 +157,12 @@ public partial class FeedViewModel : ObservableObject
         try
         {
             var newReels = await _aiService.GetReelsAsync(SelectedTopic, SelectedExpertiseLevel, cancellationToken);
+            var favoriteIds = await _favoritesService.GetFavoriteIdsAsync(cancellationToken);
             foreach (var reel in newReels)
+            {
+                reel.IsFavorite = favoriteIds.Contains(_favoritesService.GetReelId(reel));
                 Reels.Add(reel);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -125,4 +178,23 @@ public partial class FeedViewModel : ObservableObject
             OnPropertyChanged(nameof(IsInitialLoading));
         }
     }
+
+    private async Task LoadFavoritesAsync(CancellationToken cancellationToken = default)
+    {
+        var favorites = await _favoritesService.GetFavoritesAsync(cancellationToken);
+        FavoriteReels.Clear();
+        foreach (var reel in favorites)
+            FavoriteReels.Add(reel);
+    }
+
+    private static ProgrammingReel CreateCopy(ProgrammingReel source, bool isFavorite) => new()
+    {
+        Title = source.Title,
+        Hook = source.Hook,
+        Explanation = source.Explanation,
+        CodeExample = source.CodeExample,
+        KeyTakeaway = source.KeyTakeaway,
+        Language = source.Language,
+        IsFavorite = isFavorite
+    };
 }
