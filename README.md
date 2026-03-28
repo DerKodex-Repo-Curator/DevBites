@@ -1,278 +1,175 @@
 # DevBites
 
-A .NET MAUI app that delivers short, engaging programming concepts in an infinite scrolling feed — similar to Instagram Reels but for developers. Content is generated on-demand by a large language model (LLM) and streamed into a live feed grouped by topic.
+`DevBites` is a `.NET MAUI` app that delivers short, engaging programming concept cards in an infinite-scrolling feed.
+
+It uses `Microsoft.Extensions.AI` (`IChatClient`) so the AI provider is swappable between **Gemini** and **Ollama** via `.env` config.
 
 ---
 
-## Table of Contents
+## Screenshots
 
-- [Features](#features)
-- [Architecture Overview](#architecture-overview)
-- [Project Structure](#project-structure)
-- [Key Components](#key-components)
-  - [Model](#model)
-  - [Service Layer](#service-layer)
-  - [ViewModel](#viewmodel)
-  - [View](#view)
-  - [Configuration](#configuration)
-- [AI Provider Setup](#ai-provider-setup)
-  - [Google Gemini (default)](#google-gemini-default)
-  - [Ollama — local inference](#ollama--local-inference)
-- [Getting Started](#getting-started)
-- [Dependency Injection Map](#dependency-injection-map)
+![Feed Screen](References/Pixel7Screenshot.png)
+
 
 ---
 
-## Features
+## Feature Overview
 
-- Infinite scrolling feed powered by live AI-generated content
-- Topic picker (`.NET`, `Python`, `OOP`, `SOLID`, `Design Patterns`, `Data Structures`)
-- 10 concept cards fetched per request; next fetch pre-triggered at card 8
-- Swappable AI backend — switch between **Google Gemini** and a **local Ollama** model via a single `.env` line
-- Full MVVM with `CommunityToolkit.Mvvm` source generators
-- Dependency injection wired through the standard MAUI host builder
-
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                        .env file                        │
-│        (embedded resource — loaded at startup)          │
-└──────────────────────────┬──────────────────────────────┘
-                           │ DotEnvLoader.Load()
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                     MauiProgram.cs                      │
-│                 (composition root / DI)                 │
-│                                                         │
-│  AI_PROVIDER=gemini ──► GeminiChatClient                │
-│  AI_PROVIDER=ollama ──► OllamaApiClient                 │
-│                              │                          │
-│                       IChatClient (MEAI)                │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-           ┌───────────────▼───────────────┐
-           │        IAIContentService      │
-           │        AIContentService       │
-           │  • builds LLM prompt          │
-           │  • deserializes JSON response │
-           │    → List<ProgrammingReel>    │
-           └───────────────┬───────────────┘
-                           │
-           ┌───────────────▼───────────────┐
-           │         FeedViewModel         │
-           │  • ObservableCollection<Reel> │
-           │  • topic selection            │
-           │  • infinite-scroll pagination │
-           │  • cancellation on topic swap │
-           └───────────────┬───────────────┘
-                           │ BindingContext
-           ┌───────────────▼───────────────┐
-           │      FeedPage.xaml (View)     │
-           │  • Picker (topic selector)    │
-           │  • CollectionView (feed)      │
-           │  • loading / error overlays   │
-           └───────────────────────────────┘
-```
+- Infinite scrolling AI-generated feed
+- Topic filter (`.NET`, `Python`, `OOP`, `SOLID`, `Design Patterns`, `Data Structures`)
+- Expertise filter (`Beginner`, `Medium`, `Advanced`, `Pro`)
+- Collapsible custom header
+- Reusable card and header UI components (`ContentView` controls)
+- Favorite reels (heart toggle per card)
+- Persistent favorites stored locally in `SQLite`
+- Feed/Favorites bottom tab bar UI
+- AI provider switching through `.env` (`gemini` / `ollama`)
+- Structured output enforcement using JSON schema via `IChatClient` response format
 
 ---
 
-## Project Structure
+## Design Overview
 
-```
-DevBites/
-│
-├── .env                    # Local secrets — git-ignored
-├── .env.example            # Committed template for .env
-├── .gitignore
-│
-├── Constants.cs            # Reads env vars; exposes typed config
-├── DotEnvLoader.cs         # Parses embedded .env into Environment vars
-├── MauiProgram.cs          # App entry point, DI composition root
-│
-├── Models/
-│   └── ProgrammingReel.cs  # Strongly typed JSON response model
-│
-├── Services/
-│   ├── IAIContentService.cs
-│   └── AIContentService.cs # LLM prompt, HTTP call, JSON parsing
-│
-├── ViewModels/
-│   └── FeedViewModel.cs    # State, commands, pagination logic
-│
-└── Views/
-    ├── FeedPage.xaml       # Dark-themed infinite scroll feed UI
-    └── FeedPage.xaml.cs    # Constructor injection of FeedViewModel
-```
+`DevBites` uses an MVVM-first design that keeps UI, state, and data responsibilities separated.
+
+### UI Experience
+
+- `FeedPage` hosts the complete screen layout, including:
+  - collapsible top header
+  - main content region
+  - loading and error status area
+  - bottom tab-style switch between **Feed** and **Favorites**
+- `FeedHeaderView` is a reusable header component with topic and expertise pickers.
+- `ReelCardView` is a reusable card component used in both feed and favorites lists.
+
+### State and Interaction
+
+- `FeedViewModel` manages:
+  - active reels and favorite reels
+  - selected topic and expertise
+  - pagination and cancellation logic
+  - toggling favorites
+  - switching between feed and favorites sections
+
+### Data and Persistence
+
+- `AIContentService` requests and parses AI-generated reels.
+- `FavoritesService` persists saved reels in local `SQLite` (`devbites.db3`).
+- `DotEnvLoader` + `Constants` provide runtime config for provider/model settings.
+
+### AI Integration
+
+- `IChatClient` abstraction keeps provider logic decoupled.
+- Provider is selected at startup (`gemini` or `ollama`) from `.env`.
+- JSON schema response format is applied to encourage strongly structured output.
 
 ---
 
 ## Key Components
 
-### Model
+### `Models/ProgrammingReel.cs`
 
-**`Models/ProgrammingReel.cs`**
+- Represents one concept card returned by AI
+- Uses `JsonPropertyName` mappings
+- Includes UI-only `IsFavorite` state (not serialized)
 
-The single data model for a concept card. Fields map 1-to-1 to what the LLM returns as JSON.
+### `Services/AIContentService.cs`
 
-| Property | Description |
-|---|---|
-| `Title` | Short catchy headline |
-| `Hook` | One attention-grabbing sentence |
-| `Explanation` | 2–3 sentences explaining the concept |
-| `CodeExample` | Concise code snippet (5–10 lines) |
-| `KeyTakeaway` | The most important lesson |
-| `Language` | Topic/language label for the badge |
+- Builds prompt using selected topic + expertise level
+- Uses `IChatClient.GetResponseAsync`
+- Enforces structured response format with JSON schema
+- Parses response into `List<ProgrammingReel>`
 
-`System.Text.Json` `[JsonPropertyName]` attributes map the camelCase JSON keys to PascalCase C# properties.
-
----
-
-### Service Layer
-
-**`Services/IAIContentService.cs`**
+`IAIContentService` signature:
 
 ```csharp
-Task<IReadOnlyList<ProgrammingReel>> GetReelsAsync(string topic, CancellationToken ct);
+Task<IReadOnlyList<ProgrammingReel>> GetReelsAsync(
+    string topic,
+    string expertiseLevel,
+    CancellationToken cancellationToken = default);
 ```
 
-A single-method interface. Callers never depend on Gemini, Ollama, or any HTTP detail.
+### `Services/FavoritesService.cs`
+
+- Uses `sqlite-net-pcl`
+- Stores favorites in local db file (`devbites.db3`)
+- Supports toggle favorite, list favorites, and favorite-id lookup
+
+### `ViewModels/FeedViewModel.cs`
+
+Main state + commands:
+
+- `Reels`, `FavoriteReels`
+- `SelectedTopic`, `SelectedExpertiseLevel`
+- `ShowFeedCommand`, `ShowFavoritesCommand`
+- `ToggleFavoriteCommand`
+- `LoadInitialCommand`, `LoadMoreCommand`
+- Cancellation-aware refresh when topic/expertise changes
 
 ---
 
-**`Services/AIContentService.cs`**
+## Configuration
 
-Concrete implementation. Responsibilities:
+The app loads `.env` from an embedded resource at startup.
 
-1. **Builds the prompt** — injects `topic` into a constant template that instructs the LLM to return a strict JSON array of exactly 10 items.
-2. **Calls the LLM** — via `IChatClient.GetResponseAsync` from `Microsoft.Extensions.AI`.
-3. **Extracts JSON** — strips any accidental markdown fences the model may add before deserializing.
-4. **Deserializes** — `System.Text.Json` maps the response into `List<ProgrammingReel>`.
-
-> The service is intentionally unaware of which LLM backend is active. It only holds an `IChatClient` — the abstraction from `Microsoft.Extensions.AI`.
-
----
-
-### ViewModel
-
-**`ViewModels/FeedViewModel.cs`** — inherits `ObservableObject` (CommunityToolkit.Mvvm)
-
-| Member | Role |
-|---|---|
-| `Reels` | `ObservableCollection<ProgrammingReel>` bound to the feed |
-| `Topics` | Static list of topics shown in the Picker |
-| `SelectedTopic` | Two-way bound; changing it cancels in-flight requests and starts a fresh load |
-| `IsLoading` | Drives the activity indicator |
-| `IsInitialLoading` | `true` only when loading with an empty list — shows the full-screen overlay |
-| `HasError` | `true` when `ErrorMessage` is set — shows the error bar |
-| `LoadInitialCommand` | Triggered from `OnAppearing`; starts the first batch |
-| `LoadMoreCommand` | Bound to `RemainingItemsThresholdReachedCommand` on the CollectionView |
-
-**Pagination flow:**
-
-```
-OnAppearing
-    └─► LoadInitialCommand
-            └─► StartFreshLoadAsync()         ← cancels previous CTS, clears list
-                    └─► FetchReelsAsync(token) ← sets IsLoading, appends results
-
-User scrolls to card 8 of 10
-    └─► LoadMoreCommand (RemainingItemsThreshold = 2)
-            └─► FetchReelsAsync(token)         ← appends next 10 cards
-
-User changes topic
-    └─► OnSelectedTopicChanged
-            └─► StartFreshLoadAsync()         ← cancels previous CTS, clears list
-```
-
-**Cancellation:** every `StartFreshLoadAsync` call cancels the previous `CancellationTokenSource` before creating a new one. This ensures that switching topics mid-flight silently discards stale results.
-
----
-
-### View
-
-**`Views/FeedPage.xaml`**
-
-- `Shell.NavBarIsVisible="False"` — uses a custom header instead of Shell's nav bar.
-- **Header row** — app title + `Picker` for topic selection.
-- **CollectionView** — `RemainingItemsThreshold="2"` triggers `LoadMoreCommand` when 2 items remain (i.e., the user is at card 8 of 10).
-- **Bottom status bar** — `ActivityIndicator` while loading more; error label when `HasError`.
-- **Initial loading overlay** — full-screen spinner shown via `IsInitialLoading` while the very first batch loads.
-- All bindings use `x:DataType` (compiled bindings) for compile-time safety and performance.
-
----
-
-### Configuration
-
-**`.env` (git-ignored, embedded as a resource)**
+Example:
 
 ```dotenv
-AI_PROVIDER=gemini          # gemini | ollama
+AI_PROVIDER=gemini
 
-GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-2.5-flash-lite
 
 OLLAMA_ENDPOINT=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 ```
-
-**`DotEnvLoader.cs`**  
-Reads the embedded `.env` resource at startup and calls `Environment.SetEnvironmentVariable` for each key. Host environment variables take precedence (CI/CD-friendly).
-
-**`Constants.cs`**  
-Thin typed wrappers over `Environment.GetEnvironmentVariable`. `GeminiApiKey` throws a descriptive `InvalidOperationException` if the key is missing and Gemini is the active provider.
-
 ---
 
 ## AI Provider Setup
 
-### Google Gemini (default)
+### Gemini (default)
 
-1. Get a free API key from [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
-2. Open `.env` and set:
-   ```dotenv
-   AI_PROVIDER=gemini
-   GEMINI_API_KEY=your_key_here
-   GEMINI_MODEL=gemini-2.0-flash
-   ```
+1. Create API key: <https://aistudio.google.com/app/apikey>
+2. Set in `.env`:
 
-### Ollama — local inference
+```dotenv
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-2.5-flash-lite
+```
 
-1. Install Ollama from [https://ollama.com](https://ollama.com).
-2. Pull the model:
-   ```bash
-   ollama pull llama3.2
-   ```
-3. Open `.env` and set:
-   ```dotenv
-   AI_PROVIDER=ollama
-   OLLAMA_ENDPOINT=http://localhost:11434
-   OLLAMA_MODEL=llama3.2
-   ```
+### Ollama (local)
 
-No code changes are required to switch providers — only the `.env` value changes.
+1. Install Ollama: <https://ollama.com>
+2. Pull model:
+
+```bash
+ollama pull llama3.2
+```
+
+3. Set in `.env`:
+
+```dotenv
+AI_PROVIDER=ollama
+OLLAMA_ENDPOINT=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+```
 
 ---
 
 ## Getting Started
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/your-org/devbites.git
-cd devbites
+# 1) restore
+dotnet restore
 
-# 2. Create your local .env from the template
-cp .env.example .env
+# 2) build
+dotnet build
 
-# 3. Add your Gemini API key (or configure Ollama — see above)
-#    Edit .env and set GEMINI_API_KEY=...
-
-# 4. Run on Android
+# 3) run Android
 dotnet build -t:Run -f net10.0-android
 
-# 5. Run on Windows
+# 4) run Windows
 dotnet build -t:Run -f net10.0-windows10.0.19041.0
 ```
 
@@ -284,5 +181,18 @@ dotnet build -t:Run -f net10.0-windows10.0.19041.0
 |---|---|---|
 | `IChatClient` | `GeminiChatClient` or `OllamaApiClient` | Singleton |
 | `IAIContentService` | `AIContentService` | Singleton |
+| `IFavoritesService` | `FavoritesService` | Singleton |
 | `FeedViewModel` | `FeedViewModel` | Transient |
 | `FeedPage` | `FeedPage` | Transient |
+
+---
+
+## Tech Stack
+
+- `.NET 10`
+- `.NET MAUI`
+- `CommunityToolkit.Mvvm`
+- `Microsoft.Extensions.AI`
+- `GeminiDotnet.Extensions.AI`
+- `OllamaSharp`
+- `sqlite-net-pcl`
